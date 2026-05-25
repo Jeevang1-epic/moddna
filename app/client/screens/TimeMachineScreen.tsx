@@ -7,6 +7,10 @@ import {
   SectionTitle,
   Textarea,
 } from '../../../components/ui';
+import {
+  DEFAULT_MOD_HISTORY_TEXT,
+  type TimeMachineSessionState,
+} from '../../../lib/client/sessionState';
 import type { ModerationCase } from '../../../src/shared/contracts/moderation';
 import type {
   AmbiguityLevel,
@@ -14,19 +18,6 @@ import type {
   TimeMachineAnalyzeResponse,
 } from '../../../src/shared/contracts/time-machine';
 import { analyzeTimeMachineRequest } from '../features/timeMachine/api';
-
-const defaultModHistoryJson = `[
-  {
-    "id": "manual_case_1",
-    "title": "Example prior case title",
-    "body": "Prior case body context.",
-    "comment": "Prior moderator discussion comment.",
-    "action": "removed",
-    "matchedRules": ["No self-promotion"],
-    "moderatorNote": "Removed for promotional intent.",
-    "createdAt": "2026-05-01T12:00:00.000Z"
-  }
-]`;
 
 const parseLines = (value: string): string[] =>
   value
@@ -167,13 +158,27 @@ const CaseList = ({
   </Card>
 );
 
-export const TimeMachineScreen = () => {
-  const [postTitle, setPostTitle] = useState('');
-  const [postBody, setPostBody] = useState('');
-  const [commentText, setCommentText] = useState('');
-  const [rulesText, setRulesText] = useState('');
-  const [modHistoryText, setModHistoryText] = useState(defaultModHistoryJson);
-  const [result, setResult] = useState<TimeMachineAnalyzeResponse | null>(null);
+type TimeMachineScreenProps = {
+  session: TimeMachineSessionState;
+  onSessionChange: (
+    updater: (current: TimeMachineSessionState) => TimeMachineSessionState
+  ) => void;
+  onAnalyzeSuccess: (response: TimeMachineAnalyzeResponse) => void;
+};
+
+export const TimeMachineScreen = ({
+  session,
+  onSessionChange,
+  onAnalyzeSuccess,
+}: TimeMachineScreenProps) => {
+  const {
+    postTitle,
+    postBody,
+    commentText,
+    rulesText,
+    modHistoryText,
+    result,
+  } = session;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -188,9 +193,12 @@ export const TimeMachineScreen = () => {
         subredditRules: parseLines(rulesText),
         modHistory: parseModHistory(modHistoryText),
       });
-      setResult(response);
+      onAnalyzeSuccess(response);
     } catch (analysisError) {
-      setResult(null);
+      onSessionChange((current) => ({
+        ...current,
+        result: null,
+      }));
       setError(
         analysisError instanceof Error
           ? analysisError.message
@@ -202,12 +210,14 @@ export const TimeMachineScreen = () => {
   };
 
   const onClear = (): void => {
-    setPostTitle('');
-    setPostBody('');
-    setCommentText('');
-    setRulesText('');
-    setModHistoryText(defaultModHistoryJson);
-    setResult(null);
+    onSessionChange(() => ({
+      postTitle: '',
+      postBody: '',
+      commentText: '',
+      rulesText: '',
+      modHistoryText: DEFAULT_MOD_HISTORY_TEXT,
+      result: null,
+    }));
     setError(null);
   };
 
@@ -232,7 +242,12 @@ export const TimeMachineScreen = () => {
               <Input
                 value={postTitle}
                 placeholder="Summarize the post topic"
-                onChange={(event) => setPostTitle(event.target.value)}
+                onChange={(event) =>
+                  onSessionChange((current) => ({
+                    ...current,
+                    postTitle: event.target.value,
+                  }))
+                }
               />
             </div>
             <div className="space-y-2">
@@ -242,7 +257,12 @@ export const TimeMachineScreen = () => {
               <Input
                 value={commentText}
                 placeholder="Primary comment content"
-                onChange={(event) => setCommentText(event.target.value)}
+                onChange={(event) =>
+                  onSessionChange((current) => ({
+                    ...current,
+                    commentText: event.target.value,
+                  }))
+                }
               />
             </div>
           </div>
@@ -255,7 +275,12 @@ export const TimeMachineScreen = () => {
               rows={5}
               value={postBody}
               placeholder="Paste full post body context"
-              onChange={(event) => setPostBody(event.target.value)}
+              onChange={(event) =>
+                onSessionChange((current) => ({
+                  ...current,
+                  postBody: event.target.value,
+                }))
+              }
             />
           </div>
 
@@ -268,7 +293,12 @@ export const TimeMachineScreen = () => {
                 rows={8}
                 value={rulesText}
                 placeholder={'No self-promotion\nBe civil\nStay on topic'}
-                onChange={(event) => setRulesText(event.target.value)}
+                onChange={(event) =>
+                  onSessionChange((current) => ({
+                    ...current,
+                    rulesText: event.target.value,
+                  }))
+                }
               />
             </div>
             <div className="space-y-2">
@@ -278,7 +308,12 @@ export const TimeMachineScreen = () => {
               <Textarea
                 rows={8}
                 value={modHistoryText}
-                onChange={(event) => setModHistoryText(event.target.value)}
+                onChange={(event) =>
+                  onSessionChange((current) => ({
+                    ...current,
+                    modHistoryText: event.target.value,
+                  }))
+                }
               />
             </div>
           </div>

@@ -6,6 +6,7 @@ import {
   SectionTitle,
   Textarea,
 } from '../../../components/ui';
+import type { ConstitutionSessionState } from '../../../lib/client/sessionState';
 import type { ConstitutionBuildResponse } from '../../../src/shared/contracts/constitution';
 import { buildConstitutionRequest } from '../features/constitution/api';
 
@@ -15,11 +16,20 @@ const parseLines = (value: string): string[] =>
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-export const ConstitutionBuilderScreen = () => {
-  const [rulesText, setRulesText] = useState('');
-  const [modLogText, setModLogText] = useState('');
-  const [removalPatternsText, setRemovalPatternsText] = useState('');
-  const [result, setResult] = useState<ConstitutionBuildResponse | null>(null);
+type ConstitutionBuilderScreenProps = {
+  session: ConstitutionSessionState;
+  onSessionChange: (
+    updater: (current: ConstitutionSessionState) => ConstitutionSessionState
+  ) => void;
+  onBuildSuccess: (response: ConstitutionBuildResponse) => void;
+};
+
+export const ConstitutionBuilderScreen = ({
+  session,
+  onSessionChange,
+  onBuildSuccess,
+}: ConstitutionBuilderScreenProps) => {
+  const { rulesText, modLogText, removalPatternsText, result } = session;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,9 +42,12 @@ export const ConstitutionBuilderScreen = () => {
         modLog: parseLines(modLogText),
         removalPatterns: parseLines(removalPatternsText),
       });
-      setResult(response);
+      onBuildSuccess(response);
     } catch (buildError) {
-      setResult(null);
+      onSessionChange((current) => ({
+        ...current,
+        result: null,
+      }));
       setError(
         buildError instanceof Error
           ? buildError.message
@@ -69,7 +82,12 @@ export const ConstitutionBuilderScreen = () => {
               placeholder={
                 'No hate speech\nNo personal attacks\nNo referral links'
               }
-              onChange={(event) => setRulesText(event.target.value)}
+              onChange={(event) =>
+                onSessionChange((current) => ({
+                  ...current,
+                  rulesText: event.target.value,
+                }))
+              }
             />
           </div>
 
@@ -86,7 +104,12 @@ export const ConstitutionBuilderScreen = () => {
               placeholder={
                 'Removed for repeated insults\nApproved after context edit'
               }
-              onChange={(event) => setModLogText(event.target.value)}
+              onChange={(event) =>
+                onSessionChange((current) => ({
+                  ...current,
+                  modLogText: event.target.value,
+                }))
+              }
             />
           </div>
 
@@ -101,7 +124,12 @@ export const ConstitutionBuilderScreen = () => {
               rows={9}
               value={removalPatternsText}
               placeholder={'Referral spam\nTargeted harassment\nUnsafe links'}
-              onChange={(event) => setRemovalPatternsText(event.target.value)}
+              onChange={(event) =>
+                onSessionChange((current) => ({
+                  ...current,
+                  removalPatternsText: event.target.value,
+                }))
+              }
             />
           </div>
 

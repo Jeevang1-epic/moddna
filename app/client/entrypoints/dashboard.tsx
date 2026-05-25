@@ -1,8 +1,19 @@
 import { context } from '@devvit/web/client';
-import { StrictMode, useMemo, useState } from 'react';
+import { StrictMode, useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Badge, Button, Card } from '../../../components/ui';
+import {
+  applyConstitutionAnalytics,
+  applyTimeMachineAnalytics,
+  hydrateSessionState,
+  persistSessionState,
+  type AppSessionState,
+  type ConstitutionSessionState,
+  type TimeMachineSessionState,
+} from '../../../lib/client/sessionState';
 import type { AppView } from '../../../lib/client/views';
+import type { ConstitutionBuildResponse } from '../../../src/shared/contracts/constitution';
+import type { TimeMachineAnalyzeResponse } from '../../../src/shared/contracts/time-machine';
 import { ConstitutionBuilderScreen } from '../screens/ConstitutionBuilderScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { TimeMachineScreen } from '../screens/TimeMachineScreen';
@@ -29,9 +40,68 @@ const secondaryNav = ['Mod Queue', 'Rule Library', 'Analytics', 'Settings'];
 
 const DashboardApp = () => {
   const [activeView, setActiveView] = useState<AppView>('dashboard');
+  const [sessionState, setSessionState] = useState<AppSessionState>(() =>
+    hydrateSessionState()
+  );
 
   const subtitle = useMemo(
     () => `r/${context.subredditName ?? 'subreddit'}`,
+    []
+  );
+
+  useEffect(() => {
+    persistSessionState(sessionState);
+  }, [sessionState]);
+
+  const updateTimeMachineSession = useCallback(
+    (
+      updater: (current: TimeMachineSessionState) => TimeMachineSessionState
+    ): void => {
+      setSessionState((current) => ({
+        ...current,
+        timeMachine: updater(current.timeMachine),
+      }));
+    },
+    []
+  );
+
+  const updateConstitutionSession = useCallback(
+    (
+      updater: (current: ConstitutionSessionState) => ConstitutionSessionState
+    ): void => {
+      setSessionState((current) => ({
+        ...current,
+        constitution: updater(current.constitution),
+      }));
+    },
+    []
+  );
+
+  const onTimeMachineAnalyzeSuccess = useCallback(
+    (response: TimeMachineAnalyzeResponse): void => {
+      setSessionState((current) => ({
+        ...current,
+        timeMachine: {
+          ...current.timeMachine,
+          result: response,
+        },
+        analytics: applyTimeMachineAnalytics(current, response),
+      }));
+    },
+    []
+  );
+
+  const onConstitutionBuildSuccess = useCallback(
+    (response: ConstitutionBuildResponse): void => {
+      setSessionState((current) => ({
+        ...current,
+        constitution: {
+          ...current.constitution,
+          result: response,
+        },
+        analytics: applyConstitutionAnalytics(current, response),
+      }));
+    },
     []
   );
 
@@ -137,11 +207,24 @@ const DashboardApp = () => {
           )}
 
           {activeView === 'dashboard' && (
-            <DashboardScreen onSelectView={setActiveView} />
+            <DashboardScreen
+              onSelectView={setActiveView}
+              analytics={sessionState.analytics}
+            />
           )}
-          {activeView === 'time-machine' && <TimeMachineScreen />}
+          {activeView === 'time-machine' && (
+            <TimeMachineScreen
+              session={sessionState.timeMachine}
+              onSessionChange={updateTimeMachineSession}
+              onAnalyzeSuccess={onTimeMachineAnalyzeSuccess}
+            />
+          )}
           {activeView === 'constitution-builder' && (
-            <ConstitutionBuilderScreen />
+            <ConstitutionBuilderScreen
+              session={sessionState.constitution}
+              onSessionChange={updateConstitutionSession}
+              onBuildSuccess={onConstitutionBuildSuccess}
+            />
           )}
         </section>
       </div>
