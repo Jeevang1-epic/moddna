@@ -8,6 +8,7 @@
   },
   "include": [
     "../src/client/**/*",
+    "../src/shared/**/*",
     "../app/client/**/*",
     "../components/**/*",
     "../lib/client/**/*"

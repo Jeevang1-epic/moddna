@@ -3,7 +3,7 @@ import type { HealthResponse } from '../../../../src/shared/contracts/system';
 import { readAppEnv } from '../../../../lib/config/env';
 import { json } from '../../../../lib/server/http';
 
-export const createApiRoutes = (): Hono => {
+export const createHealthRoutes = (): Hono => {
   const router = new Hono();
 
   router.get('/health', (context) => {

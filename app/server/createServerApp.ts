@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createApiRoutes } from './routes/api/health';
+import { createApiRoutes } from './routes/api';
 import { createInternalRoutes } from './routes/internal';
 
 export const createServerApp = (): Hono => {
