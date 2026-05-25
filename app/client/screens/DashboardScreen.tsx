@@ -10,8 +10,8 @@ export const DashboardScreen = ({ onSelectView }: DashboardScreenProps) => (
     <Card className="space-y-4">
       <SectionTitle>Time Machine</SectionTitle>
       <p className="text-sm text-zinc-700">
-        Review past moderation decisions, surrounding context, and outcome
-        patterns.
+        Submit post context, retrieve similar approved and removed precedents,
+        and inspect ambiguity signals.
       </p>
       <Button tone="subtle" onClick={() => onSelectView('time-machine')}>
         Open Time Machine
@@ -21,8 +21,8 @@ export const DashboardScreen = ({ onSelectView }: DashboardScreenProps) => (
     <Card className="space-y-4">
       <SectionTitle>Constitution Builder</SectionTitle>
       <p className="text-sm text-zinc-700">
-        Curate moderator decision principles and keep standards consistent over
-        time.
+        Generate moderation philosophy, onboarding guidance, and suggested
+        AutoModerator rules.
       </p>
       <Button
         tone="subtle"
