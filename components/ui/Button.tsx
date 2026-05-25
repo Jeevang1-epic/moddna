@@ -14,7 +14,7 @@ const toneClasses: Record<ButtonTone, string> = {
   neutral:
     'bg-zinc-900 text-white hover:bg-zinc-800 active:bg-zinc-950 disabled:bg-zinc-400',
   subtle:
-    'bg-zinc-100 text-zinc-900 hover:bg-zinc-200 active:bg-zinc-300 disabled:bg-zinc-100 disabled:text-zinc-400',
+    'border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 active:bg-zinc-100 disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400',
 };
 
 export const Button = ({
@@ -27,7 +27,7 @@ export const Button = ({
   <button
     type={type}
     className={cn(
-      'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed',
+      'inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 disabled:cursor-not-allowed',
       toneClasses[tone],
       fullWidth && 'w-full',
       className

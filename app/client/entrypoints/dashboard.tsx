@@ -1,7 +1,7 @@
 import { context } from '@devvit/web/client';
 import { StrictMode, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Button } from '../../../components/ui';
+import { Badge, Button } from '../../../components/ui';
 import type { AppView } from '../../../lib/client/views';
 import { ConstitutionBuilderScreen } from '../screens/ConstitutionBuilderScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -13,6 +13,12 @@ const viewTitle: Record<AppView, string> = {
   'constitution-builder': 'Constitution Builder',
 };
 
+const viewDescription: Record<AppView, string> = {
+  dashboard: 'Moderation intelligence workspace',
+  'time-machine': 'Precedent retrieval and ambiguity diagnostics',
+  'constitution-builder': 'Policy synthesis and onboarding guidance',
+};
+
 const DashboardApp = () => {
   const [activeView, setActiveView] = useState<AppView>('dashboard');
 
@@ -22,19 +28,29 @@ const DashboardApp = () => {
   );
 
   return (
-    <main className="min-h-screen px-4 py-6 text-zinc-900">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
-        <header className="rounded-xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-            {subtitle}
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-zinc-950">
-            ModDNA {viewTitle[activeView]}
-          </h1>
+    <main className="min-h-screen px-4 py-6 text-zinc-900 sm:px-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+        <header className="rounded-2xl border border-zinc-200 bg-white px-5 py-5 shadow-sm sm:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                {subtitle}
+              </p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
+                ModDNA
+              </h1>
+              <p className="mt-2 text-sm text-zinc-600">
+                {viewDescription[activeView]}
+              </p>
+            </div>
+            <Badge tone="info" className="mt-1">
+              {viewTitle[activeView]}
+            </Badge>
+          </div>
         </header>
 
         {activeView !== 'dashboard' && (
-          <div>
+          <div className="flex items-center">
             <Button tone="subtle" onClick={() => setActiveView('dashboard')}>
               Back to Dashboard
             </Button>

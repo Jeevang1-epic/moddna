@@ -1,5 +1,12 @@
 :root {
   --moddna-bg: #f4f4f5;
+  --moddna-surface: #ffffff;
+  --moddna-text: #18181b;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -17,5 +24,12 @@ body {
       transparent 35%
     ),
     var(--moddna-bg);
+  color: var(--moddna-text);
   font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  min-height: 100vh;
 }
