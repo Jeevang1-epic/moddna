@@ -1,7 +1,7 @@
 import { context } from '@devvit/web/client';
 import { StrictMode, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Badge, Button } from '../../../components/ui';
+import { Badge, Button, Card } from '../../../components/ui';
 import type { AppView } from '../../../lib/client/views';
 import { ConstitutionBuilderScreen } from '../screens/ConstitutionBuilderScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -14,10 +14,18 @@ const viewTitle: Record<AppView, string> = {
 };
 
 const viewDescription: Record<AppView, string> = {
-  dashboard: 'Moderation intelligence workspace',
-  'time-machine': 'Precedent retrieval and ambiguity diagnostics',
-  'constitution-builder': 'Policy synthesis and onboarding guidance',
+  dashboard: 'Moderation Intelligence Workspace',
+  'time-machine': 'Precedent Retrieval and Analysis',
+  'constitution-builder': 'Policy Synthesis and Onboarding',
 };
+
+const primaryNav: Array<{ view: AppView; label: string }> = [
+  { view: 'dashboard', label: 'Dashboard' },
+  { view: 'time-machine', label: 'Time Machine' },
+  { view: 'constitution-builder', label: 'Constitution Builder' },
+];
+
+const secondaryNav = ['Mod Queue', 'Rule Library', 'Analytics', 'Settings'];
 
 const DashboardApp = () => {
   const [activeView, setActiveView] = useState<AppView>('dashboard');
@@ -28,40 +36,114 @@ const DashboardApp = () => {
   );
 
   return (
-    <main className="min-h-screen px-4 py-6 text-zinc-900 sm:px-6">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-        <header className="rounded-2xl border border-zinc-200 bg-white px-5 py-5 shadow-sm sm:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                {subtitle}
-              </p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
+    <main className="min-h-screen px-3 py-4 text-slate-100 sm:px-5 sm:py-6">
+      <div className="mx-auto flex w-full max-w-[1400px] gap-4 lg:gap-6">
+        <aside className="hidden w-64 shrink-0 md:flex md:flex-col">
+          <Card className="flex h-full flex-col gap-5 p-4">
+            <div className="rounded-xl border border-indigo-400/25 bg-slate-900/80 p-3">
+              <p className="text-base font-semibold tracking-tight text-slate-100">
                 ModDNA
-              </h1>
-              <p className="mt-2 text-sm text-zinc-600">
-                {viewDescription[activeView]}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                Moderation Intelligence Workspace
               </p>
             </div>
-            <Badge tone="info" className="mt-1">
-              {viewTitle[activeView]}
-            </Badge>
-          </div>
-        </header>
 
-        {activeView !== 'dashboard' && (
-          <div className="flex items-center">
-            <Button tone="subtle" onClick={() => setActiveView('dashboard')}>
-              Back to Dashboard
-            </Button>
-          </div>
-        )}
+            <nav className="space-y-1.5">
+              {primaryNav.map((item) => {
+                const selected = item.view === activeView;
+                return (
+                  <button
+                    key={item.view}
+                    type="button"
+                    className={`w-full rounded-xl border px-3 py-2 text-left text-sm font-medium transition-all ${
+                      selected
+                        ? 'border-indigo-400/45 bg-indigo-500/20 text-indigo-100 shadow-[inset_0_0_0_1px_rgba(129,140,248,0.25)]'
+                        : 'border-slate-800 bg-slate-900/50 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60 hover:text-slate-100'
+                    }`}
+                    onClick={() => setActiveView(item.view)}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
 
-        {activeView === 'dashboard' && (
-          <DashboardScreen onSelectView={setActiveView} />
-        )}
-        {activeView === 'time-machine' && <TimeMachineScreen />}
-        {activeView === 'constitution-builder' && <ConstitutionBuilderScreen />}
+            <div className="space-y-1.5">
+              {secondaryNav.map((item) => (
+                <div
+                  key={item}
+                  className="rounded-xl border border-slate-800 bg-slate-900/40 px-3 py-2 text-sm text-slate-500"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-auto rounded-xl border border-slate-700/70 bg-slate-900/75 p-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                Runtime
+              </p>
+              <p className="mt-1 text-sm font-medium text-slate-100">
+                ModDNA AI
+              </p>
+              <p className="mt-1 text-xs text-emerald-300">Online</p>
+            </div>
+          </Card>
+        </aside>
+
+        <section className="min-w-0 flex-1 space-y-4">
+          <header className="rounded-2xl border border-slate-800/80 bg-slate-950/65 px-4 py-4 shadow-[0_16px_40px_rgba(2,6,23,0.45)] backdrop-blur-sm sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  {subtitle}
+                </p>
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-50 sm:text-3xl">
+                  ModDNA
+                </h1>
+                <p className="mt-1 text-sm text-slate-400">
+                  {viewDescription[activeView]}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge tone="info">{viewTitle[activeView]}</Badge>
+                <Button tone="subtle" className="!px-3 !py-2 text-xs">
+                  Last 7 Days
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          <div className="grid gap-2 md:hidden">
+            {primaryNav.map((item) => (
+              <Button
+                key={item.view}
+                tone={item.view === activeView ? 'primary' : 'subtle'}
+                fullWidth
+                onClick={() => setActiveView(item.view)}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </div>
+
+          {activeView !== 'dashboard' && (
+            <div className="flex items-center">
+              <Button tone="subtle" onClick={() => setActiveView('dashboard')}>
+                Back to Dashboard
+              </Button>
+            </div>
+          )}
+
+          {activeView === 'dashboard' && (
+            <DashboardScreen onSelectView={setActiveView} />
+          )}
+          {activeView === 'time-machine' && <TimeMachineScreen />}
+          {activeView === 'constitution-builder' && (
+            <ConstitutionBuilderScreen />
+          )}
+        </section>
       </div>
     </main>
   );
