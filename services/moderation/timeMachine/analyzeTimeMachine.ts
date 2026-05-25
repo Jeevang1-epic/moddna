@@ -1,3 +1,4 @@
+import type { ModerationCase } from '../../../src/shared/contracts/moderation';
 import type {
   AmbiguityLevel,
   ModerationTendency,
@@ -6,68 +7,219 @@ import type {
   TimeMachineAnalyzeRequest,
   TimeMachineAnalyzeResponse,
 } from '../../../src/shared/contracts/time-machine';
-import type { ModerationCase } from '../../../src/shared/contracts/moderation';
 import { loadHistoricalCases } from '../history/loadHistoricalCases';
 import { scoreSimilarCases } from '../retrieval/similarity';
 
+type RankedCase = {
+  moderationCase: ModerationCase;
+  similarity: number;
+  ruleOverlap: number;
+  recency: number;
+  combined: number;
+};
+
 const formatPercent = (value: number): string => `${Math.round(value * 100)}%`;
 
-const normalizeRule = (value: string): string =>
-  value.trim().toLowerCase().replace(/\s+/g, ' ');
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(min, value));
 
-const isRuleRelated = (ruleA: string, ruleB: string): boolean => {
-  const a = normalizeRule(ruleA);
-  const b = normalizeRule(ruleB);
-  if (!a || !b) {
-    return false;
+const normalizeText = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ');
+
+const tokenize = (value: string): string[] =>
+  normalizeText(value)
+    .split(' ')
+    .map((token) => token.trim())
+    .filter((token) => token.length > 2);
+
+const jaccard = (left: string[], right: string[]): number => {
+  if (left.length === 0 || right.length === 0) {
+    return 0;
   }
 
-  return a === b || a.includes(b) || b.includes(a);
+  const leftSet = new Set(left);
+  const rightSet = new Set(right);
+  const intersection = [...leftSet].filter((token) =>
+    rightSet.has(token)
+  ).length;
+  const union = new Set([...leftSet, ...rightSet]).size;
+  return union === 0 ? 0 : intersection / union;
 };
+
+const scoreRuleRelation = (ruleA: string, ruleB: string): number => {
+  const normalizedA = normalizeText(ruleA);
+  const normalizedB = normalizeText(ruleB);
+  if (!normalizedA || !normalizedB) {
+    return 0;
+  }
+
+  if (normalizedA === normalizedB) {
+    return 1;
+  }
+
+  if (normalizedA.includes(normalizedB) || normalizedB.includes(normalizedA)) {
+    return 0.85;
+  }
+
+  const overlap = jaccard(tokenize(normalizedA), tokenize(normalizedB));
+  if (overlap >= 0.5) {
+    return overlap;
+  }
+
+  return 0;
+};
+
+const cleanRules = (rules: string[]): string[] => [
+  ...new Set(
+    rules.map((rule) => rule.trim()).filter((rule) => rule.length > 0)
+  ),
+];
 
 const scoreRuleOverlap = (
   subredditRules: string[],
   moderationCase: ModerationCase
 ): number => {
-  const cleanedRules = subredditRules
-    .map((rule) => rule.trim())
-    .filter((rule) => rule.length > 0);
-  if (cleanedRules.length === 0) {
+  const rules = cleanRules(subredditRules);
+  if (rules.length === 0) {
     return 0;
   }
 
-  const matchedCount = cleanedRules.filter((rule) =>
-    moderationCase.matchedRules.some((caseRule) =>
-      isRuleRelated(rule, caseRule)
-    )
-  ).length;
+  const caseRules = cleanRules(moderationCase.matchedRules);
+  if (caseRules.length === 0) {
+    return 0;
+  }
 
-  return matchedCount / cleanedRules.length;
+  const totalScore = rules.reduce((sum, rule) => {
+    const bestMatch = caseRules.reduce((best, caseRule) => {
+      const matchScore = scoreRuleRelation(rule, caseRule);
+      return matchScore > best ? matchScore : best;
+    }, 0);
+    return sum + bestMatch;
+  }, 0);
+
+  return clamp(totalScore / rules.length, 0, 1);
 };
 
-const buildCaseExplanation = (
-  similarity: number,
-  ruleOverlap: number,
-  moderationCase: ModerationCase
-): string =>
-  `${moderationCase.action} precedent with ${formatPercent(
-    similarity
-  )} textual similarity and ${formatPercent(ruleOverlap)} rule overlap.`;
+const parseTimestamp = (value: string): number => {
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const buildRecencyScores = (cases: ModerationCase[]): Map<string, number> => {
+  const datedCases = cases.map((moderationCase) => ({
+    id: moderationCase.id,
+    time: parseTimestamp(moderationCase.createdAt),
+  }));
+
+  const minTime = datedCases.reduce(
+    (min, moderationCase) => Math.min(min, moderationCase.time),
+    Number.POSITIVE_INFINITY
+  );
+  const maxTime = datedCases.reduce(
+    (max, moderationCase) => Math.max(max, moderationCase.time),
+    Number.NEGATIVE_INFINITY
+  );
+
+  const scores = new Map<string, number>();
+  if (
+    !Number.isFinite(minTime) ||
+    !Number.isFinite(maxTime) ||
+    minTime === maxTime
+  ) {
+    for (const moderationCase of datedCases) {
+      scores.set(moderationCase.id, 0.5);
+    }
+    return scores;
+  }
+
+  const span = maxTime - minTime;
+  for (const moderationCase of datedCases) {
+    scores.set(
+      moderationCase.id,
+      clamp((moderationCase.time - minTime) / span, 0, 1)
+    );
+  }
+  return scores;
+};
+
+const buildCaseExplanation = (rankedCase: RankedCase): string =>
+  `${rankedCase.moderationCase.action} precedent with ${formatPercent(
+    rankedCase.similarity
+  )} textual similarity, ${formatPercent(rankedCase.ruleOverlap)} rule overlap, and ${formatPercent(
+    rankedCase.recency
+  )} recency signal.`;
+
+const toSimilarCase = (rankedCase: RankedCase): SimilarCase => ({
+  case: rankedCase.moderationCase,
+  similarity: rankedCase.similarity,
+  ruleOverlap: rankedCase.ruleOverlap,
+  explanation: buildCaseExplanation(rankedCase),
+});
 
 const buildModerationTendency = (
-  similarCases: SimilarCase[]
+  rankedCases: RankedCase[]
 ): ModerationTendency => {
-  const approvedCount = similarCases.filter(
-    (similarCase) => similarCase.case.action === 'approved'
+  const evidenceSet = rankedCases.slice(0, 12);
+  const approvedCount = evidenceSet.filter(
+    (rankedCase) => rankedCase.moderationCase.action === 'approved'
   ).length;
-  const removedCount = similarCases.length - approvedCount;
-  const total = similarCases.length || 1;
-  const approvedRate = approvedCount / total;
-  const removedRate = removedCount / total;
-  const confidence = Math.abs(approvedRate - removedRate);
+  const removedCount = evidenceSet.length - approvedCount;
+
+  if (evidenceSet.length === 0) {
+    return {
+      approvedCount: 0,
+      removedCount: 0,
+      approvedRate: 0.5,
+      removedRate: 0.5,
+      dominantAction: 'balanced',
+      confidence: 0,
+    };
+  }
+
+  const totalWeight = evidenceSet.reduce(
+    (sum, rankedCase) => sum + rankedCase.combined,
+    0
+  );
+  const approvedWeight = evidenceSet.reduce((sum, rankedCase) => {
+    if (rankedCase.moderationCase.action !== 'approved') {
+      return sum;
+    }
+    return sum + rankedCase.combined;
+  }, 0);
+  const removedWeight = totalWeight - approvedWeight;
+
+  const approvedRate =
+    totalWeight > 0
+      ? approvedWeight / totalWeight
+      : approvedCount / evidenceSet.length;
+  const removedRate =
+    totalWeight > 0
+      ? removedWeight / totalWeight
+      : removedCount / evidenceSet.length;
+
+  const averageSimilarity =
+    evidenceSet.reduce((sum, rankedCase) => sum + rankedCase.similarity, 0) /
+    evidenceSet.length;
+  const averageRuleOverlap =
+    evidenceSet.reduce((sum, rankedCase) => sum + rankedCase.ruleOverlap, 0) /
+    evidenceSet.length;
+  const evidenceStrength = clamp(
+    averageSimilarity * 0.7 + averageRuleOverlap * 0.3,
+    0,
+    1
+  );
+  const confidence = clamp(
+    Math.abs(approvedRate - removedRate) * evidenceStrength,
+    0,
+    1
+  );
 
   let dominantAction: ModerationTendency['dominantAction'] = 'balanced';
-  if (confidence >= 0.15) {
+  if (confidence >= 0.12) {
     dominantAction = approvedRate > removedRate ? 'approved' : 'removed';
   }
 
@@ -83,61 +235,84 @@ const buildModerationTendency = (
 
 const buildRuleOverlapSummary = (
   subredditRules: string[],
-  topSimilarCases: SimilarCase[]
+  rankedCases: RankedCase[]
 ): RuleOverlapSummary => {
-  const cleanedRules = subredditRules
-    .map((rule) => rule.trim())
-    .filter((rule) => rule.length > 0);
-  if (cleanedRules.length === 0) {
+  const rules = cleanRules(subredditRules);
+  if (rules.length === 0) {
     return {
       coverage: 0,
       rules: [],
     };
   }
 
-  const rules = cleanedRules.map((rule) => {
-    const hits = topSimilarCases.filter((similarCase) =>
-      similarCase.case.matchedRules.some((caseRule) =>
-        isRuleRelated(rule, caseRule)
-      )
-    ).length;
-    const weight =
-      topSimilarCases.length > 0 ? hits / topSimilarCases.length : 0;
-    return { rule, hits, weight };
+  const evidenceSet = rankedCases.slice(0, 12);
+  const totalWeight = evidenceSet.reduce(
+    (sum, rankedCase) => sum + rankedCase.combined,
+    0
+  );
+
+  const mapped = rules.map((rule) => {
+    let hits = 0;
+    let weightedHits = 0;
+
+    for (const rankedCase of evidenceSet) {
+      const bestMatch = rankedCase.moderationCase.matchedRules.reduce(
+        (best, caseRule) => {
+          const score = scoreRuleRelation(rule, caseRule);
+          return score > best ? score : best;
+        },
+        0
+      );
+
+      if (bestMatch > 0) {
+        hits += 1;
+        weightedHits += rankedCase.combined * bestMatch;
+      }
+    }
+
+    return {
+      rule,
+      hits,
+      weight: totalWeight > 0 ? clamp(weightedHits / totalWeight, 0, 1) : 0,
+    };
   });
 
-  const coveredRules = rules.filter((rule) => rule.hits > 0).length;
+  const coverage = mapped.filter((rule) => rule.hits > 0).length / rules.length;
 
   return {
-    coverage: coveredRules / cleanedRules.length,
-    rules: rules.sort((left, right) => right.weight - left.weight),
+    coverage,
+    rules: mapped.sort((left, right) => right.weight - left.weight),
   };
 };
 
 const classifyAmbiguity = (
   tendency: ModerationTendency,
-  topSimilarCases: SimilarCase[],
+  rankedCases: RankedCase[],
   ruleOverlap: RuleOverlapSummary
 ): AmbiguityLevel => {
-  const averageSimilarity =
-    topSimilarCases.length === 0
-      ? 0
-      : topSimilarCases.reduce(
-          (sum, similarCase) => sum + similarCase.similarity,
-          0
-        ) / topSimilarCases.length;
-
-  const consistencyScore =
-    tendency.confidence * 0.45 +
-    averageSimilarity * 0.35 +
-    ruleOverlap.coverage * 0.2;
-  const ambiguityScore = 1 - consistencyScore;
-
-  if (ambiguityScore >= 0.62) {
+  const evidenceSet = rankedCases.slice(0, 8);
+  if (evidenceSet.length === 0) {
     return 'high';
   }
 
-  if (ambiguityScore >= 0.36) {
+  const averageSimilarity =
+    evidenceSet.reduce((sum, rankedCase) => sum + rankedCase.similarity, 0) /
+    evidenceSet.length;
+  const averageCombined =
+    evidenceSet.reduce((sum, rankedCase) => sum + rankedCase.combined, 0) /
+    evidenceSet.length;
+
+  const consistencyScore =
+    tendency.confidence * 0.45 +
+    averageCombined * 0.35 +
+    ruleOverlap.coverage * 0.2;
+  const ambiguityScore = clamp(1 - consistencyScore, 0, 1);
+
+  if (ambiguityScore >= 0.62 || averageSimilarity < 0.2) {
+    return 'high';
+  }
+
+  if (ambiguityScore >= 0.38) {
     return 'medium';
   }
 
@@ -148,12 +323,15 @@ const buildOverallExplanation = (
   tendency: ModerationTendency,
   ambiguity: AmbiguityLevel,
   ruleOverlap: RuleOverlapSummary,
-  topSimilarCases: SimilarCase[]
+  topSimilarCases: SimilarCase[],
+  similarApproved: SimilarCase[],
+  similarRemoved: SimilarCase[]
 ): string => {
   const strongestRules = ruleOverlap.rules
     .filter((rule) => rule.hits > 0)
     .slice(0, 3)
     .map((rule) => rule.rule);
+
   const strongestRuleText =
     strongestRules.length > 0
       ? `Most correlated rules: ${strongestRules.join(', ')}.`
@@ -164,14 +342,19 @@ const buildOverallExplanation = (
       ? formatPercent(topSimilarCases[0]?.similarity ?? 0)
       : formatPercent(0);
 
+  const approvedLeadCase = similarApproved.at(0);
+  const approvedLead = formatPercent(approvedLeadCase?.similarity ?? 0);
+  const removedLeadCase = similarRemoved.at(0);
+  const removedLead = formatPercent(removedLeadCase?.similarity ?? 0);
+
   const tendencyText =
     tendency.dominantAction === 'balanced'
-      ? `Historical tendency is balanced (${tendency.approvedCount} approved vs ${tendency.removedCount} removed).`
+      ? `Historical tendency is balanced (${tendency.approvedCount} approved vs ${tendency.removedCount} removed in the evidence window).`
       : `Historical tendency leans ${tendency.dominantAction} with ${formatPercent(
           tendency.confidence
         )} confidence.`;
 
-  return `${tendencyText} Top similarity score is ${topSimilarity}. ${strongestRuleText} Ambiguity is ${ambiguity}.`;
+  return `${tendencyText} Top overall similarity is ${topSimilarity}. Lead approved similarity is ${approvedLead}, lead removed similarity is ${removedLead}. ${strongestRuleText} Ambiguity is ${ambiguity}.`;
 };
 
 const toQueryText = (request: TimeMachineAnalyzeRequest): string =>
@@ -182,56 +365,83 @@ const toQueryText = (request: TimeMachineAnalyzeRequest): string =>
     request.subredditRules.join(' '),
   ].join(' ');
 
+const buildRankedCases = (
+  request: TimeMachineAnalyzeRequest,
+  cases: ModerationCase[]
+): RankedCase[] => {
+  const queryText = toQueryText(request);
+  const similarityScored = scoreSimilarCases(queryText, cases);
+  const recencyScores = buildRecencyScores(cases);
+
+  return similarityScored
+    .map((result) => {
+      const ruleOverlap = scoreRuleOverlap(
+        request.subredditRules,
+        result.moderationCase
+      );
+      const recency = recencyScores.get(result.moderationCase.id) ?? 0.5;
+      const combined = clamp(
+        result.similarity * 0.68 + ruleOverlap * 0.24 + recency * 0.08,
+        0,
+        1
+      );
+
+      return {
+        moderationCase: result.moderationCase,
+        similarity: result.similarity,
+        ruleOverlap,
+        recency,
+        combined,
+      };
+    })
+    .sort((left, right) => {
+      if (right.combined !== left.combined) {
+        return right.combined - left.combined;
+      }
+      return right.similarity - left.similarity;
+    });
+};
+
+const selectTopByAction = (
+  rankedCases: RankedCase[],
+  action: ModerationCase['action'],
+  limit: number
+): SimilarCase[] =>
+  rankedCases
+    .filter((rankedCase) => rankedCase.moderationCase.action === action)
+    .slice(0, limit)
+    .map(toSimilarCase);
+
 export const analyzeTimeMachine = async (
   request: TimeMachineAnalyzeRequest
 ): Promise<TimeMachineAnalyzeResponse> => {
   const start = Date.now();
-
   const historicalCases = await loadHistoricalCases(request.modHistory);
-  const queryText = toQueryText(request);
-  const scored = scoreSimilarCases(queryText, historicalCases);
+  const rankedCases = buildRankedCases(request, historicalCases);
 
-  const topSimilarCases: SimilarCase[] = scored.slice(0, 10).map((result) => {
-    const ruleOverlap = scoreRuleOverlap(
-      request.subredditRules,
-      result.moderationCase
-    );
-    return {
-      case: result.moderationCase,
-      similarity: result.similarity,
-      ruleOverlap,
-      explanation: buildCaseExplanation(
-        result.similarity,
-        ruleOverlap,
-        result.moderationCase
-      ),
-    };
-  });
+  const topSimilarCases = rankedCases.slice(0, 5).map(toSimilarCase);
+  const similarApproved = selectTopByAction(rankedCases, 'approved', 5);
+  const similarRemoved = selectTopByAction(rankedCases, 'removed', 5);
 
-  const similarApproved = topSimilarCases
-    .filter((result) => result.case.action === 'approved')
-    .slice(0, 5);
-  const similarRemoved = topSimilarCases
-    .filter((result) => result.case.action === 'removed')
-    .slice(0, 5);
-
-  const tendency = buildModerationTendency(topSimilarCases);
+  const tendency = buildModerationTendency(rankedCases);
   const ruleOverlap = buildRuleOverlapSummary(
     request.subredditRules,
-    topSimilarCases
+    rankedCases
   );
-  const ambiguity = classifyAmbiguity(tendency, topSimilarCases, ruleOverlap);
+  const ambiguity = classifyAmbiguity(tendency, rankedCases, ruleOverlap);
   const explanation = buildOverallExplanation(
     tendency,
     ambiguity,
     ruleOverlap,
-    topSimilarCases
+    topSimilarCases,
+    similarApproved,
+    similarRemoved
   );
 
   return {
     similarApproved,
     similarRemoved,
-    topSimilarCases: topSimilarCases.slice(0, 5),
+    topSimilarCases,
     moderationTendency: tendency,
     ruleOverlap,
     ambiguity,
