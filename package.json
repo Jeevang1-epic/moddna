@@ -1,7 +1,7 @@
 {
   "private": true,
-  "name": "moddna",
-  "version": "0.1.0",
+  "name": "moddna-ai",
+  "version": "0.0.0",
   "description": "ModDNA - Institutional memory for Reddit moderation",
   "license": "BSD-3-Clause",
   "type": "module",
