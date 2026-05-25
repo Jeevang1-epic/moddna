@@ -1,0 +1,137 @@
+[
+  {
+    "id": "case_001",
+    "title": "Weekly progress update on open-source tooling",
+    "body": "Sharing a weekly build log and asking for feedback on maintainability tradeoffs.",
+    "comment": "Includes implementation details and asks for peer review.",
+    "action": "approved",
+    "matchedRules": [
+      "On-topic development content",
+      "Constructive discussion required"
+    ],
+    "moderatorNote": "Fits the subreddit focus and invites productive feedback.",
+    "createdAt": "2026-03-02T10:14:00.000Z"
+  },
+  {
+    "id": "case_002",
+    "title": "Looking for moderators for my new crypto exchange",
+    "body": "Join now and get token rewards for early moderation support.",
+    "comment": "Contains referral links and promotional language.",
+    "action": "removed",
+    "matchedRules": ["No self-promotion", "No referral campaigns"],
+    "moderatorNote": "Primary intent is growth marketing, not community discussion.",
+    "createdAt": "2026-03-06T08:28:00.000Z"
+  },
+  {
+    "id": "case_003",
+    "title": "Can someone review my API design for abuse reports?",
+    "body": "I propose a schema and queue model for handling moderation reports.",
+    "comment": "Shares concrete code snippets and edge cases.",
+    "action": "approved",
+    "matchedRules": [
+      "On-topic development content",
+      "Technical specificity preferred"
+    ],
+    "moderatorNote": "Clear technical intent and strong relevance.",
+    "createdAt": "2026-03-11T16:40:00.000Z"
+  },
+  {
+    "id": "case_004",
+    "title": "This mod team is corrupt and useless",
+    "body": "Calling out individual moderators and encouraging harassment.",
+    "comment": "Contains direct insults and no actionable context.",
+    "action": "removed",
+    "matchedRules": ["No personal attacks", "Civility policy"],
+    "moderatorNote": "Violates civility and targets individuals.",
+    "createdAt": "2026-03-14T21:09:00.000Z"
+  },
+  {
+    "id": "case_005",
+    "title": "Tool comparison: queue triage speed before and after templates",
+    "body": "Benchmarks moderation throughput using standardized response templates.",
+    "comment": "Includes methods, sample size, and caveats.",
+    "action": "approved",
+    "matchedRules": ["On-topic development content", "Evidence-based claims"],
+    "moderatorNote": "Substantive and data-backed.",
+    "createdAt": "2026-03-18T12:22:00.000Z"
+  },
+  {
+    "id": "case_006",
+    "title": "Download this cracked moderation software",
+    "body": "Posting pirated binaries and urging others to bypass licenses.",
+    "comment": "Contains direct links to unauthorized downloads.",
+    "action": "removed",
+    "matchedRules": ["No illegal content", "No malware or unsafe links"],
+    "moderatorNote": "Unsafe and policy-violating distribution.",
+    "createdAt": "2026-03-22T02:55:00.000Z"
+  },
+  {
+    "id": "case_007",
+    "title": "Request for feedback: handling borderline sarcasm in reports",
+    "body": "Discussing ambiguous tone and whether context should override keyword flags.",
+    "comment": "Asks for process guidance and examples.",
+    "action": "approved",
+    "matchedRules": [
+      "Constructive discussion required",
+      "Moderator process discussions allowed"
+    ],
+    "moderatorNote": "Legitimate gray-area moderation topic.",
+    "createdAt": "2026-03-24T19:12:00.000Z"
+  },
+  {
+    "id": "case_008",
+    "title": "Vote brigade this other subreddit",
+    "body": "Encourages coordinated harassment and mass downvoting.",
+    "comment": "Provides direct links and call-to-action language.",
+    "action": "removed",
+    "matchedRules": ["No harassment", "No brigading"],
+    "moderatorNote": "Explicit coordination of harmful behavior.",
+    "createdAt": "2026-03-28T07:44:00.000Z"
+  },
+  {
+    "id": "case_009",
+    "title": "Template for incident postmortems after bad moderation calls",
+    "body": "Proposes a checklist for accountability and consistency.",
+    "comment": "Includes reproducible structure and rationale.",
+    "action": "approved",
+    "matchedRules": [
+      "On-topic development content",
+      "Constructive discussion required"
+    ],
+    "moderatorNote": "Helps improve team process and consistency.",
+    "createdAt": "2026-04-01T13:36:00.000Z"
+  },
+  {
+    "id": "case_010",
+    "title": "Off-topic meme dump",
+    "body": "Multiple unrelated images with no connection to moderation workflows.",
+    "comment": "No context beyond reactions.",
+    "action": "removed",
+    "matchedRules": ["On-topic development content"],
+    "moderatorNote": "Low relevance and no substantive discussion value.",
+    "createdAt": "2026-04-04T11:51:00.000Z"
+  },
+  {
+    "id": "case_011",
+    "title": "Question about documenting rule exceptions for edge cases",
+    "body": "How should teams encode exceptions without creating loopholes?",
+    "comment": "Asks for examples from experienced moderators.",
+    "action": "approved",
+    "matchedRules": [
+      "Moderator process discussions allowed",
+      "Constructive discussion required"
+    ],
+    "moderatorNote": "Useful governance discussion with practical scope.",
+    "createdAt": "2026-04-10T18:02:00.000Z"
+  },
+  {
+    "id": "case_012",
+    "title": "Selling access to private moderation logs",
+    "body": "Offers scraped moderation data to third parties.",
+    "comment": "Includes contact details for sales.",
+    "action": "removed",
+    "matchedRules": ["No illegal content", "Protect sensitive data"],
+    "moderatorNote": "Violates privacy and data handling expectations.",
+    "createdAt": "2026-04-12T09:17:00.000Z"
+  }
+]
