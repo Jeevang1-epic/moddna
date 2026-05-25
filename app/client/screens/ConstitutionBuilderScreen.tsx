@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Button, Card, SectionTitle, Textarea } from '../../../components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  SectionTitle,
+  Textarea,
+} from '../../../components/ui';
 import type { ConstitutionBuildResponse } from '../../../src/shared/contracts/constitution';
 import { buildConstitutionRequest } from '../features/constitution/api';
 
@@ -42,79 +48,147 @@ export const ConstitutionBuilderScreen = () => {
   return (
     <div className="space-y-4">
       <Card className="space-y-4">
-        <SectionTitle>Constitution Builder</SectionTitle>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-zinc-800">
-            Rules (one per line)
-          </label>
-          <Textarea
-            rows={6}
-            value={rulesText}
-            onChange={(event) => setRulesText(event.target.value)}
-          />
+        <SectionTitle subtitle="Synthesize a repeatable moderation framework">
+          Constitution Builder
+        </SectionTitle>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-800">
+              Rules (one per line)
+            </label>
+            <Textarea
+              rows={8}
+              value={rulesText}
+              placeholder={
+                'No hate speech\nNo personal attacks\nNo referral links'
+              }
+              onChange={(event) => setRulesText(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-800">
+              Moderator Log Notes
+            </label>
+            <Textarea
+              rows={8}
+              value={modLogText}
+              placeholder={
+                'Removed for repeated insults\nApproved after context edit'
+              }
+              onChange={(event) => setModLogText(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-800">
+              Removal Patterns
+            </label>
+            <Textarea
+              rows={8}
+              value={removalPatternsText}
+              placeholder={'Referral spam\nTargeted harassment\nUnsafe links'}
+              onChange={(event) => setRemovalPatternsText(event.target.value)}
+            />
+          </div>
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-zinc-800">
-            Moderator Log Notes (one per line)
-          </label>
-          <Textarea
-            rows={6}
-            value={modLogText}
-            onChange={(event) => setModLogText(event.target.value)}
-          />
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={() => void onBuild()} disabled={loading}>
+            {loading ? 'Building...' : 'Build Constitution'}
+          </Button>
+          <Badge>{parseLines(rulesText).length} rules</Badge>
+          <Badge>{parseLines(modLogText).length} log notes</Badge>
+          <Badge>{parseLines(removalPatternsText).length} patterns</Badge>
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-zinc-800">
-            Removal Patterns (one per line)
-          </label>
-          <Textarea
-            rows={6}
-            value={removalPatternsText}
-            onChange={(event) => setRemovalPatternsText(event.target.value)}
-          />
-        </div>
-        <Button onClick={() => void onBuild()} disabled={loading}>
-          {loading ? 'Building...' : 'Build Constitution'}
-        </Button>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && (
+          <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {error}
+          </p>
+        )}
       </Card>
+
+      {loading && (
+        <Card tone="muted">
+          <p className="text-sm text-zinc-700">
+            Synthesizing moderation philosophy, onboarding guidance, and rule
+            candidates.
+          </p>
+        </Card>
+      )}
+
+      {!loading && !result && !error && (
+        <Card tone="muted">
+          <p className="text-sm text-zinc-700">
+            Provide rules, log notes, and removal patterns to generate a
+            moderation constitution draft.
+          </p>
+        </Card>
+      )}
 
       {result && (
         <>
-          <Card className="space-y-3">
-            <SectionTitle>Moderation Philosophy</SectionTitle>
-            <p className="text-sm text-zinc-800">
-              {result.moderationPhilosophy}
-            </p>
-          </Card>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card className="space-y-3">
+              <SectionTitle subtitle="Core decision doctrine">
+                Moderation Philosophy
+              </SectionTitle>
+              <p className="text-sm leading-6 text-zinc-800">
+                {result.moderationPhilosophy}
+              </p>
+            </Card>
+
+            <Card className="space-y-3">
+              <SectionTitle subtitle="How new moderators should execute">
+                Onboarding Summary
+              </SectionTitle>
+              <p className="text-sm leading-6 text-zinc-800">
+                {result.onboardingSummary}
+              </p>
+            </Card>
+          </div>
 
           <Card className="space-y-3">
-            <SectionTitle>Onboarding Summary</SectionTitle>
-            <p className="text-sm text-zinc-800">{result.onboardingSummary}</p>
-          </Card>
-
-          <Card className="space-y-3">
-            <SectionTitle>Suggested AutoModerator Rules</SectionTitle>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <SectionTitle subtitle="Snippets ready for rule automation">
+                Suggested AutoModerator Rules
+              </SectionTitle>
+              <Badge tone="info">
+                {result.suggestedAutoModeratorRules.length} rules
+              </Badge>
+            </div>
             {result.suggestedAutoModeratorRules.map((rule, index) => (
-              <pre
+              <div
                 key={`${index}-${rule}`}
-                className="overflow-x-auto rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-800"
+                className="overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-3"
               >
-                {rule}
-              </pre>
+                <div className="mb-2">
+                  <Badge>Rule {index + 1}</Badge>
+                </div>
+                <pre className="text-xs leading-5 text-zinc-800">{rule}</pre>
+              </div>
             ))}
           </Card>
 
           <Card className="space-y-3">
-            <SectionTitle>Supporting Signals</SectionTitle>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <SectionTitle subtitle="Signals used in synthesis">
+                Supporting Signals
+              </SectionTitle>
+              <Badge>{result.elapsedMs}ms</Badge>
+            </div>
             {result.supportingSignals.map((signal) => (
               <div
                 key={signal.theme}
-                className="space-y-1 rounded-md border border-zinc-200 p-3"
+                className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3"
               >
                 <p className="text-sm font-semibold text-zinc-900">
                   {signal.theme}
                 </p>
+                {signal.evidence.length === 0 && (
+                  <p className="text-sm text-zinc-600">
+                    No direct evidence lines.
+                  </p>
+                )}
                 {signal.evidence.map((evidenceLine, index) => (
                   <p
                     key={`${signal.theme}-${index}-${evidenceLine}`}
@@ -125,9 +199,6 @@ export const ConstitutionBuilderScreen = () => {
                 ))}
               </div>
             ))}
-            <p className="text-xs text-zinc-600">
-              Elapsed: {result.elapsedMs}ms
-            </p>
           </Card>
         </>
       )}
