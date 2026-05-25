@@ -46,19 +46,25 @@ export const ConstitutionBuilderScreen = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-5">
       <Card className="space-y-4">
-        <SectionTitle subtitle="Synthesize a repeatable moderation framework">
-          Constitution Builder
-        </SectionTitle>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <SectionTitle subtitle="Build a repeatable moderation framework from existing behavior">
+            Constitution Builder
+          </SectionTitle>
+          <Badge tone="info">Draft Generator</Badge>
+        </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-800">
-              Rules (one per line)
-            </label>
+            <div className="flex items-center gap-2">
+              <Badge tone="info">1</Badge>
+              <label className="text-sm font-medium text-slate-300">
+                Core Rules
+              </label>
+            </div>
             <Textarea
-              rows={8}
+              rows={9}
               value={rulesText}
               placeholder={
                 'No hate speech\nNo personal attacks\nNo referral links'
@@ -66,12 +72,16 @@ export const ConstitutionBuilderScreen = () => {
               onChange={(event) => setRulesText(event.target.value)}
             />
           </div>
+
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-800">
-              Moderator Log Notes
-            </label>
+            <div className="flex items-center gap-2">
+              <Badge tone="info">2</Badge>
+              <label className="text-sm font-medium text-slate-300">
+                Moderator Notes
+              </label>
+            </div>
             <Textarea
-              rows={8}
+              rows={9}
               value={modLogText}
               placeholder={
                 'Removed for repeated insults\nApproved after context edit'
@@ -79,29 +89,52 @@ export const ConstitutionBuilderScreen = () => {
               onChange={(event) => setModLogText(event.target.value)}
             />
           </div>
+
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-800">
-              Removal Patterns
-            </label>
+            <div className="flex items-center gap-2">
+              <Badge tone="info">3</Badge>
+              <label className="text-sm font-medium text-slate-300">
+                Removal Patterns
+              </label>
+            </div>
             <Textarea
-              rows={8}
+              rows={9}
               value={removalPatternsText}
               placeholder={'Referral spam\nTargeted harassment\nUnsafe links'}
               onChange={(event) => setRemovalPatternsText(event.target.value)}
             />
           </div>
+
+          <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/55 p-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Badge tone="warning">4</Badge>
+                <p className="text-sm font-medium text-slate-300">Generate</p>
+              </div>
+              <p className="text-sm leading-6 text-slate-400">
+                Synthesize moderation philosophy, onboarding guidance, and
+                AutoModerator-ready suggestions.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Button
+                fullWidth
+                onClick={() => void onBuild()}
+                disabled={loading}
+              >
+                {loading ? 'Building...' : 'Generate Draft'}
+              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Badge>{parseLines(rulesText).length} rules</Badge>
+                <Badge>{parseLines(modLogText).length} notes</Badge>
+                <Badge>{parseLines(removalPatternsText).length} patterns</Badge>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => void onBuild()} disabled={loading}>
-            {loading ? 'Building...' : 'Build Constitution'}
-          </Button>
-          <Badge>{parseLines(rulesText).length} rules</Badge>
-          <Badge>{parseLines(modLogText).length} log notes</Badge>
-          <Badge>{parseLines(removalPatternsText).length} patterns</Badge>
-        </div>
         {error && (
-          <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          <p className="rounded-xl border border-rose-400/30 bg-rose-500/12 px-3 py-2 text-sm text-rose-300">
             {error}
           </p>
         )}
@@ -109,7 +142,7 @@ export const ConstitutionBuilderScreen = () => {
 
       {loading && (
         <Card tone="muted">
-          <p className="text-sm text-zinc-700">
+          <p className="text-sm text-slate-300">
             Synthesizing moderation philosophy, onboarding guidance, and rule
             candidates.
           </p>
@@ -118,9 +151,9 @@ export const ConstitutionBuilderScreen = () => {
 
       {!loading && !result && !error && (
         <Card tone="muted">
-          <p className="text-sm text-zinc-700">
-            Provide rules, log notes, and removal patterns to generate a
-            moderation constitution draft.
+          <p className="text-sm text-slate-300">
+            Provide rules, moderator notes, and removal patterns to generate a
+            constitution draft and supporting signals.
           </p>
         </Card>
       )}
@@ -132,7 +165,7 @@ export const ConstitutionBuilderScreen = () => {
               <SectionTitle subtitle="Core decision doctrine">
                 Moderation Philosophy
               </SectionTitle>
-              <p className="text-sm leading-6 text-zinc-800">
+              <p className="text-sm leading-7 text-slate-300">
                 {result.moderationPhilosophy}
               </p>
             </Card>
@@ -141,7 +174,7 @@ export const ConstitutionBuilderScreen = () => {
               <SectionTitle subtitle="How new moderators should execute">
                 Onboarding Summary
               </SectionTitle>
-              <p className="text-sm leading-6 text-zinc-800">
+              <p className="text-sm leading-7 text-slate-300">
                 {result.onboardingSummary}
               </p>
             </Card>
@@ -149,7 +182,7 @@ export const ConstitutionBuilderScreen = () => {
 
           <Card className="space-y-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <SectionTitle subtitle="Snippets ready for rule automation">
+              <SectionTitle subtitle="Snippets ready for policy automation">
                 Suggested AutoModerator Rules
               </SectionTitle>
               <Badge tone="info">
@@ -159,12 +192,12 @@ export const ConstitutionBuilderScreen = () => {
             {result.suggestedAutoModeratorRules.map((rule, index) => (
               <div
                 key={`${index}-${rule}`}
-                className="overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-3"
+                className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/55 p-3.5"
               >
                 <div className="mb-2">
                   <Badge>Rule {index + 1}</Badge>
                 </div>
-                <pre className="text-xs leading-5 text-zinc-800">{rule}</pre>
+                <pre className="text-xs leading-5 text-slate-300">{rule}</pre>
               </div>
             ))}
           </Card>
@@ -176,29 +209,31 @@ export const ConstitutionBuilderScreen = () => {
               </SectionTitle>
               <Badge>{result.elapsedMs}ms</Badge>
             </div>
-            {result.supportingSignals.map((signal) => (
-              <div
-                key={signal.theme}
-                className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3"
-              >
-                <p className="text-sm font-semibold text-zinc-900">
-                  {signal.theme}
-                </p>
-                {signal.evidence.length === 0 && (
-                  <p className="text-sm text-zinc-600">
-                    No direct evidence lines.
+            <div className="grid gap-3 lg:grid-cols-2">
+              {result.supportingSignals.map((signal) => (
+                <div
+                  key={signal.theme}
+                  className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/50 p-3.5"
+                >
+                  <p className="text-sm font-semibold text-slate-100">
+                    {signal.theme}
                   </p>
-                )}
-                {signal.evidence.map((evidenceLine, index) => (
-                  <p
-                    key={`${signal.theme}-${index}-${evidenceLine}`}
-                    className="text-sm text-zinc-700"
-                  >
-                    {evidenceLine}
-                  </p>
-                ))}
-              </div>
-            ))}
+                  {signal.evidence.length === 0 && (
+                    <p className="text-sm text-slate-400">
+                      No direct evidence lines.
+                    </p>
+                  )}
+                  {signal.evidence.map((evidenceLine, index) => (
+                    <p
+                      key={`${signal.theme}-${index}-${evidenceLine}`}
+                      className="text-sm leading-6 text-slate-300"
+                    >
+                      {evidenceLine}
+                    </p>
+                  ))}
+                </div>
+              ))}
+            </div>
           </Card>
         </>
       )}
