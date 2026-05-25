@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { ModerationCase } from '../../../src/shared/contracts/moderation';
 import { readAppEnv } from '../../../lib/config/env';
+import { loadRedditModerationCases } from './loadRedditModerationCases';
 import { loadSeedModerationCases } from './seedHistory';
 
 type SupabaseCaseRow = {
@@ -66,10 +67,16 @@ const toTime = (value: string): number => {
 const mergeCases = (
   modHistory: ModerationCase[],
   storedCases: ModerationCase[],
+  redditCases: ModerationCase[],
   seedCases: ModerationCase[]
 ): ModerationCase[] => {
   const merged = new Map<string, ModerationCase>();
-  for (const moderationCase of [...seedCases, ...storedCases, ...modHistory]) {
+  for (const moderationCase of [
+    ...seedCases,
+    ...storedCases,
+    ...redditCases,
+    ...modHistory,
+  ]) {
     merged.set(moderationCase.id, moderationCase);
   }
 
@@ -79,7 +86,13 @@ const mergeCases = (
 };
 
 const loadRemoteCasesIfConfigured = async (): Promise<ModerationCase[]> => {
-  const env = readAppEnv();
+  let env;
+  try {
+    env = readAppEnv();
+  } catch {
+    return [];
+  }
+
   if (
     env.storageDriver !== 'supabase' ||
     !env.supabaseUrl ||
@@ -96,10 +109,23 @@ const loadRemoteCasesIfConfigured = async (): Promise<ModerationCase[]> => {
   }
 };
 
+type LoadHistoricalCasesOptions = {
+  subredditName?: string;
+  subredditRules?: string[];
+};
+
 export const loadHistoricalCases = async (
-  modHistory: ModerationCase[]
+  modHistory: ModerationCase[],
+  options: LoadHistoricalCasesOptions = {}
 ): Promise<ModerationCase[]> => {
   const seedCases = loadSeedModerationCases();
-  const remoteCases = await loadRemoteCasesIfConfigured();
-  return mergeCases(modHistory, remoteCases, seedCases);
+  const [remoteCases, redditCases] = await Promise.all([
+    loadRemoteCasesIfConfigured(),
+    loadRedditModerationCases({
+      subredditName: options.subredditName,
+      subredditRules: options.subredditRules ?? [],
+    }),
+  ]);
+
+  return mergeCases(modHistory, remoteCases, redditCases, seedCases);
 };

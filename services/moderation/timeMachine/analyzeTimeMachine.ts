@@ -9,6 +9,11 @@ import type {
 } from '../../../src/shared/contracts/time-machine';
 import { loadHistoricalCases } from '../history/loadHistoricalCases';
 import { scoreSimilarCases } from '../retrieval/similarity';
+import { loadSubredditRules } from '../../reddit/subreddit/loadSubredditRules';
+
+export type AnalyzeTimeMachineOptions = {
+  subredditName?: string;
+};
 
 type RankedCase = {
   moderationCase: ModerationCase;
@@ -325,7 +330,9 @@ const buildOverallExplanation = (
   ruleOverlap: RuleOverlapSummary,
   topSimilarCases: SimilarCase[],
   similarApproved: SimilarCase[],
-  similarRemoved: SimilarCase[]
+  similarRemoved: SimilarCase[],
+  evidenceCaseCount: number,
+  activeRuleCount: number
 ): string => {
   const strongestRules = ruleOverlap.rules
     .filter((rule) => rule.hits > 0)
@@ -354,7 +361,8 @@ const buildOverallExplanation = (
           tendency.confidence
         )} confidence.`;
 
-  return `${tendencyText} Top overall similarity is ${topSimilarity}. Lead approved similarity is ${approvedLead}, lead removed similarity is ${removedLead}. ${strongestRuleText} Ambiguity is ${ambiguity}.`;
+  const contextSummary = `Evidence set uses ${evidenceCaseCount} recent moderation cases and ${activeRuleCount} active rules.`;
+  return `${tendencyText} Top overall similarity is ${topSimilarity}. Lead approved similarity is ${approvedLead}, lead removed similarity is ${removedLead}. ${strongestRuleText} Ambiguity is ${ambiguity}. ${contextSummary}`;
 };
 
 const toQueryText = (request: TimeMachineAnalyzeRequest): string =>
@@ -412,22 +420,45 @@ const selectTopByAction = (
     .slice(0, limit)
     .map(toSimilarCase);
 
+const resolveSubredditRules = async (
+  requestRules: string[],
+  subredditName?: string
+): Promise<string[]> => {
+  const localRules = cleanRules(requestRules);
+  if (localRules.length > 0) {
+    return localRules;
+  }
+
+  const liveRules = await loadSubredditRules(subredditName);
+  return cleanRules(liveRules);
+};
+
 export const analyzeTimeMachine = async (
-  request: TimeMachineAnalyzeRequest
+  request: TimeMachineAnalyzeRequest,
+  options: AnalyzeTimeMachineOptions = {}
 ): Promise<TimeMachineAnalyzeResponse> => {
   const start = Date.now();
-  const historicalCases = await loadHistoricalCases(request.modHistory);
-  const rankedCases = buildRankedCases(request, historicalCases);
+  const resolvedRules = await resolveSubredditRules(
+    request.subredditRules,
+    options.subredditName
+  );
+  const runtimeRequest: TimeMachineAnalyzeRequest = {
+    ...request,
+    subredditRules: resolvedRules,
+  };
+
+  const historicalCases = await loadHistoricalCases(request.modHistory, {
+    subredditName: options.subredditName,
+    subredditRules: resolvedRules,
+  });
+  const rankedCases = buildRankedCases(runtimeRequest, historicalCases);
 
   const topSimilarCases = rankedCases.slice(0, 5).map(toSimilarCase);
   const similarApproved = selectTopByAction(rankedCases, 'approved', 5);
   const similarRemoved = selectTopByAction(rankedCases, 'removed', 5);
 
   const tendency = buildModerationTendency(rankedCases);
-  const ruleOverlap = buildRuleOverlapSummary(
-    request.subredditRules,
-    rankedCases
-  );
+  const ruleOverlap = buildRuleOverlapSummary(resolvedRules, rankedCases);
   const ambiguity = classifyAmbiguity(tendency, rankedCases, ruleOverlap);
   const explanation = buildOverallExplanation(
     tendency,
@@ -435,7 +466,9 @@ export const analyzeTimeMachine = async (
     ruleOverlap,
     topSimilarCases,
     similarApproved,
-    similarRemoved
+    similarRemoved,
+    Math.min(rankedCases.length, 12),
+    resolvedRules.length
   );
 
   return {
