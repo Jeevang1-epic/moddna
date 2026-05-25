@@ -142,24 +142,26 @@ const CaseList = ({
       <Badge tone={tone}>{cases.length} cases</Badge>
     </div>
     {cases.length === 0 && (
-      <p className="rounded-lg border border-dashed border-zinc-300 px-3 py-5 text-sm text-zinc-600">
+      <p className="rounded-xl border border-dashed border-slate-700 px-3 py-5 text-sm text-slate-400">
         No matching examples in this action bucket.
       </p>
     )}
     {cases.map((similarCase) => (
       <div
         key={similarCase.case.id}
-        className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3"
+        className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/55 p-3.5"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge tone={tone}>{similarCase.case.action}</Badge>
           <Badge>{toPercent(similarCase.similarity)} similarity</Badge>
           <Badge>{toPercent(similarCase.ruleOverlap)} overlap</Badge>
         </div>
-        <p className="text-sm font-semibold text-zinc-900">
+        <p className="text-sm font-semibold text-slate-100">
           {similarCase.case.title}
         </p>
-        <p className="text-xs text-zinc-600">{similarCase.explanation}</p>
+        <p className="text-xs leading-5 text-slate-400">
+          {similarCase.explanation}
+        </p>
       </div>
     ))}
   </Card>
@@ -199,155 +201,165 @@ export const TimeMachineScreen = () => {
     }
   };
 
+  const onClear = (): void => {
+    setPostTitle('');
+    setPostBody('');
+    setCommentText('');
+    setRulesText('');
+    setModHistoryText(defaultModHistoryJson);
+    setResult(null);
+    setError(null);
+  };
+
   const tendencyLabel =
     result?.moderationTendency.dominantAction === 'balanced'
-      ? 'balanced'
-      : `leans ${result?.moderationTendency.dominantAction}`;
+      ? 'Balanced'
+      : `Leans ${result?.moderationTendency.dominantAction}`;
 
   return (
-    <div className="space-y-4">
-      <Card className="space-y-4">
-        <SectionTitle subtitle="Compare new cases against historical outcomes">
-          Time Machine
-        </SectionTitle>
+    <div className="space-y-4 sm:space-y-5">
+      <div className="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
+        <Card className="space-y-4">
+          <SectionTitle subtitle="Analyze content against historical precedents">
+            Time Machine
+          </SectionTitle>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-800">
-              Post Title
-            </label>
-            <Input
-              value={postTitle}
-              placeholder="Summarize the post topic"
-              onChange={(event) => setPostTitle(event.target.value)}
-            />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300">
+                Post Title
+              </label>
+              <Input
+                value={postTitle}
+                placeholder="Summarize the post topic"
+                onChange={(event) => setPostTitle(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300">
+                Comment Text
+              </label>
+              <Input
+                value={commentText}
+                placeholder="Primary comment content"
+                onChange={(event) => setCommentText(event.target.value)}
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-800">
-              Comment Text
-            </label>
-            <Input
-              value={commentText}
-              placeholder="Primary comment content"
-              onChange={(event) => setCommentText(event.target.value)}
-            />
-          </div>
-        </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-zinc-800">Post Body</label>
-          <Textarea
-            rows={5}
-            value={postBody}
-            placeholder="Paste full post body context"
-            onChange={(event) => setPostBody(event.target.value)}
-          />
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-800">
-              Subreddit Rules (one per line)
+            <label className="text-sm font-medium text-slate-300">
+              Post Body
             </label>
             <Textarea
-              rows={8}
-              value={rulesText}
-              placeholder={'No self-promotion\nBe civil\nStay on topic'}
-              onChange={(event) => setRulesText(event.target.value)}
+              rows={5}
+              value={postBody}
+              placeholder="Paste full post body context"
+              onChange={(event) => setPostBody(event.target.value)}
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-800">
-              Mod History (JSON array or one line per case)
-            </label>
-            <Textarea
-              rows={8}
-              value={modHistoryText}
-              onChange={(event) => setModHistoryText(event.target.value)}
-            />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300">
+                Subreddit Rules (one per line)
+              </label>
+              <Textarea
+                rows={8}
+                value={rulesText}
+                placeholder={'No self-promotion\nBe civil\nStay on topic'}
+                onChange={(event) => setRulesText(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300">
+                Mod History (JSON array or one line per case)
+              </label>
+              <Textarea
+                rows={8}
+                value={modHistoryText}
+                onChange={(event) => setModHistoryText(event.target.value)}
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => void onAnalyze()} disabled={loading}>
-            {loading ? 'Analyzing...' : 'Analyze Case'}
-          </Button>
-          <Badge>{parseLines(rulesText).length} rules</Badge>
-          <Badge>{parseLines(modHistoryText).length} history lines</Badge>
-        </div>
-        {error && (
-          <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-            {error}
-          </p>
-        )}
-      </Card>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => void onAnalyze()} disabled={loading}>
+              {loading ? 'Analyzing...' : 'Analyze Case'}
+            </Button>
+            <Button tone="subtle" onClick={onClear} disabled={loading}>
+              Clear
+            </Button>
+            <Badge>{parseLines(rulesText).length} rules</Badge>
+            <Badge>{parseLines(modHistoryText).length} history lines</Badge>
+          </div>
 
-      {loading && (
-        <Card tone="muted">
-          <p className="text-sm text-zinc-700">
-            Running retrieval and trend analysis across historical cases.
-          </p>
+          {error && (
+            <p className="rounded-xl border border-rose-400/30 bg-rose-500/12 px-3 py-2 text-sm text-rose-300">
+              {error}
+            </p>
+          )}
         </Card>
-      )}
 
-      {!loading && !result && !error && (
-        <Card tone="muted">
-          <p className="text-sm text-zinc-700">
-            Run an analysis to view similar approved and removed examples, trend
-            direction, overlap, and ambiguity.
-          </p>
+        <Card className="space-y-3">
+          <SectionTitle subtitle="Current analysis state">
+            Analysis Summary
+          </SectionTitle>
+          {!result && !loading && (
+            <p className="rounded-xl border border-dashed border-slate-700 px-3 py-4 text-sm text-slate-400">
+              Submit content to retrieve similar precedents, ambiguity level,
+              and rule overlap confidence.
+            </p>
+          )}
+          {loading && (
+            <p className="rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-3 py-4 text-sm text-indigo-200">
+              Running retrieval and trend analysis.
+            </p>
+          )}
+          {result && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Badge tone={ambiguityTone[result.ambiguity]}>
+                  Ambiguity {result.ambiguity}
+                </Badge>
+                <Badge tone="info">{tendencyLabel}</Badge>
+              </div>
+              <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/55 p-3">
+                <p className="flex items-center justify-between text-sm text-slate-300">
+                  <span>Similar precedents</span>
+                  <span className="font-semibold text-slate-100">
+                    {result.topSimilarCases.length}
+                  </span>
+                </p>
+                <p className="flex items-center justify-between text-sm text-slate-300">
+                  <span>Rule coverage</span>
+                  <span className="font-semibold text-slate-100">
+                    {toPercent(result.ruleOverlap.coverage)}
+                  </span>
+                </p>
+                <p className="flex items-center justify-between text-sm text-slate-300">
+                  <span>Confidence</span>
+                  <span className="font-semibold text-slate-100">
+                    {toPercent(result.moderationTendency.confidence)}
+                  </span>
+                </p>
+                <p className="flex items-center justify-between text-sm text-slate-300">
+                  <span>Latency</span>
+                  <span className="font-semibold text-slate-100">
+                    {result.elapsedMs}ms
+                  </span>
+                </p>
+              </div>
+              <p className="text-sm leading-6 text-slate-300">
+                {result.explanation}
+              </p>
+            </div>
+          )}
         </Card>
-      )}
+      </div>
 
       {result && (
         <>
-          <Card className="space-y-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <SectionTitle subtitle="Decision tendency and confidence overview">
-                Analysis Summary
-              </SectionTitle>
-              <Badge tone={ambiguityTone[result.ambiguity]}>
-                Ambiguity {result.ambiguity}
-              </Badge>
-            </div>
-            <p className="text-sm text-zinc-800">{result.explanation}</p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                  Tendency
-                </p>
-                <p className="mt-1 text-sm font-semibold text-zinc-900">
-                  {tendencyLabel}
-                </p>
-              </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                  Confidence
-                </p>
-                <p className="mt-1 text-sm font-semibold text-zinc-900">
-                  {toPercent(result.moderationTendency.confidence)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                  Rule Coverage
-                </p>
-                <p className="mt-1 text-sm font-semibold text-zinc-900">
-                  {toPercent(result.ruleOverlap.coverage)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                  Latency
-                </p>
-                <p className="mt-1 text-sm font-semibold text-zinc-900">
-                  {result.elapsedMs}ms
-                </p>
-              </div>
-            </div>
-          </Card>
-
           <div className="grid gap-4 lg:grid-cols-2">
             <CaseList
               title="Similar Approved Examples"
@@ -366,21 +378,23 @@ export const TimeMachineScreen = () => {
               Rule Overlap
             </SectionTitle>
             {result.ruleOverlap.rules.length === 0 && (
-              <p className="rounded-lg border border-dashed border-zinc-300 px-3 py-5 text-sm text-zinc-600">
+              <p className="rounded-xl border border-dashed border-slate-700 px-3 py-5 text-sm text-slate-400">
                 No subreddit rules were provided.
               </p>
             )}
             {result.ruleOverlap.rules.map((rule) => (
               <div key={rule.rule} className="space-y-2">
-                <div className="flex items-center justify-between gap-3 text-sm text-zinc-700">
-                  <span className="font-medium text-zinc-900">{rule.rule}</span>
+                <div className="flex items-center justify-between gap-3 text-sm text-slate-300">
+                  <span className="font-medium text-slate-100">
+                    {rule.rule}
+                  </span>
                   <span>
                     {rule.hits} matches ({toPercent(rule.weight)})
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-zinc-100">
+                <div className="h-2 rounded-full bg-slate-800">
                   <div
-                    className="h-2 rounded-full bg-zinc-700 transition-all"
+                    className="h-2 rounded-full bg-gradient-to-r from-indigo-400 to-violet-400 transition-all"
                     style={{ width: `${Math.round(rule.weight * 100)}%` }}
                   />
                 </div>
