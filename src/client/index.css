@@ -1,2 +1,5 @@
 @import 'tailwindcss';
+@source "../../app/client";
+@source "../../components";
+@source "../../lib/client";
 @import '../../app/client/styles/index.css';
