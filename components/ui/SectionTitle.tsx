@@ -15,12 +15,12 @@ export const SectionTitle = ({
   <div className="space-y-1">
     <h2
       className={cn(
-        'text-lg font-semibold tracking-tight text-zinc-950',
+        'text-lg font-semibold tracking-tight text-slate-100 sm:text-xl',
         className
       )}
     >
       {children}
     </h2>
-    {subtitle && <p className="text-sm text-zinc-600">{subtitle}</p>}
+    {subtitle && <p className="text-sm text-slate-400">{subtitle}</p>}
   </div>
 );

@@ -10,11 +10,11 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const toneClasses: Record<ButtonTone, string> = {
   primary:
-    'bg-orange-600 text-white hover:bg-orange-500 active:bg-orange-700 disabled:bg-orange-300',
+    'border border-indigo-400/20 bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-[0_8px_24px_rgba(99,102,241,0.35)] hover:from-indigo-400 hover:to-violet-400 active:from-indigo-600 active:to-violet-600 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-400 disabled:shadow-none',
   neutral:
-    'bg-zinc-900 text-white hover:bg-zinc-800 active:bg-zinc-950 disabled:bg-zinc-400',
+    'border border-slate-600/70 bg-slate-900/95 text-slate-100 hover:bg-slate-800 active:bg-slate-700 disabled:border-slate-700 disabled:bg-slate-800/70 disabled:text-slate-500',
   subtle:
-    'border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 active:bg-zinc-100 disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-400',
+    'border border-slate-700/90 bg-slate-900/70 text-slate-100 hover:border-slate-500 hover:bg-slate-800/80 active:bg-slate-700/80 disabled:border-slate-800 disabled:bg-slate-900/60 disabled:text-slate-500',
 };
 
 export const Button = ({
@@ -27,7 +27,7 @@ export const Button = ({
   <button
     type={type}
     className={cn(
-      'inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 disabled:cursor-not-allowed',
+      'inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold tracking-wide transition-all duration-150 hover:-translate-y-px active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/80 disabled:cursor-not-allowed disabled:transform-none',
       toneClasses[tone],
       fullWidth && 'w-full',
       className

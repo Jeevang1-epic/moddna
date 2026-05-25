@@ -1,8 +1,13 @@
 :root {
-  --moddna-bg: #f4f4f5;
-  --moddna-surface: #ffffff;
-  --moddna-text: #18181b;
-  color-scheme: light;
+  --moddna-bg: #040815;
+  --moddna-surface: #0c1329;
+  --moddna-surface-muted: #101a35;
+  --moddna-border: rgba(148, 163, 184, 0.2);
+  --moddna-text: #eef4ff;
+  --moddna-text-muted: #9aadcd;
+  --moddna-accent: #6f67ff;
+  --moddna-accent-soft: rgba(111, 103, 255, 0.24);
+  color-scheme: dark;
 }
 
 * {
@@ -14,20 +19,26 @@ body {
   min-height: 100vh;
   background:
     radial-gradient(
-      circle at 20% 20%,
-      rgba(251, 146, 60, 0.14),
-      transparent 45%
+      circle at 12% 8%,
+      rgba(111, 103, 255, 0.22),
+      transparent 42%
     ),
     radial-gradient(
-      circle at 80% 10%,
-      rgba(59, 130, 246, 0.1),
+      circle at 86% 12%,
+      rgba(45, 212, 191, 0.14),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 50% 95%,
+      rgba(59, 130, 246, 0.16),
       transparent 35%
     ),
     var(--moddna-bg);
   color: var(--moddna-text);
-  font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+  font-family: 'Avenir Next', 'IBM Plex Sans', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  line-height: 1.45;
 }
 
 #root {
