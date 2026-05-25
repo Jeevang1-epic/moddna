@@ -1,6 +1,5 @@
 import { Badge, Button, Card, SectionTitle } from '../../../components/ui';
 import {
-  INITIAL_DASHBOARD_ANALYTICS,
   toAmbiguitySignals,
   type DashboardAnalyticsState,
 } from '../../../lib/client/sessionState';
@@ -32,13 +31,6 @@ const asSignedPercent = (value: number): string => {
   return `${rounded >= 0 ? '+' : ''}${rounded.toFixed(1)}%`;
 };
 
-const safeDelta = (current: number, baseline: number): number => {
-  if (baseline <= 0) {
-    return 0;
-  }
-  return ((current - baseline) / baseline) * 100;
-};
-
 export const DashboardScreen = ({
   onSelectView,
   analytics,
@@ -47,50 +39,30 @@ export const DashboardScreen = ({
     {
       label: 'Total Analyzed',
       value: formatCount(analytics.totalAnalyzed),
-      delta: asSignedPercent(
-        safeDelta(
-          analytics.totalAnalyzed,
-          INITIAL_DASHBOARD_ANALYTICS.totalAnalyzed
-        )
-      ),
+      delta: asSignedPercent(analytics.metricDeltas.totalAnalyzedPct),
       tone: 'info' as const,
     },
     {
       label: 'Ambiguity Rate',
       value: `${(analytics.ambiguityRate * 100).toFixed(1)}%`,
-      delta: asSignedPercent(
-        safeDelta(
-          analytics.ambiguityRate,
-          INITIAL_DASHBOARD_ANALYTICS.ambiguityRate
-        )
-      ),
+      delta: asSignedPercent(analytics.metricDeltas.ambiguityRatePct),
       tone:
-        analytics.ambiguityRate <= INITIAL_DASHBOARD_ANALYTICS.ambiguityRate
+        analytics.metricDeltas.ambiguityRatePct <= 0
           ? ('success' as const)
           : ('warning' as const),
     },
     {
       label: 'Actioned',
       value: formatCount(analytics.actionedCount),
-      delta: asSignedPercent(
-        safeDelta(
-          analytics.actionedCount,
-          INITIAL_DASHBOARD_ANALYTICS.actionedCount
-        )
-      ),
+      delta: asSignedPercent(analytics.metricDeltas.actionedPct),
       tone: 'success' as const,
     },
     {
       label: 'Overrides',
       value: formatCount(analytics.overridesCount),
-      delta: asSignedPercent(
-        safeDelta(
-          analytics.overridesCount,
-          INITIAL_DASHBOARD_ANALYTICS.overridesCount
-        )
-      ),
+      delta: asSignedPercent(analytics.metricDeltas.overridesPct),
       tone:
-        analytics.overridesCount <= INITIAL_DASHBOARD_ANALYTICS.overridesCount
+        analytics.metricDeltas.overridesPct <= 0
           ? ('success' as const)
           : ('danger' as const),
     },
@@ -122,11 +94,15 @@ export const DashboardScreen = ({
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <Badge tone={metric.tone}>{metric.delta}</Badge>
-                <span className="text-xs text-slate-500">vs baseline</span>
+                <span className="text-xs text-slate-500">live activity</span>
               </div>
             </div>
           ))}
         </div>
+        <p className="text-xs text-slate-500">
+          Derived from {analytics.analysisRuns} Time Machine analyses and{' '}
+          {analytics.constitutionRuns} constitution drafts in this session.
+        </p>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
@@ -155,6 +131,12 @@ export const DashboardScreen = ({
           <SectionTitle subtitle="Most frequent ambiguity contributors">
             Top Ambiguity Signals
           </SectionTitle>
+          {analytics.analysisRuns === 0 && (
+            <p className="rounded-xl border border-dashed border-slate-700 px-3 py-4 text-sm text-slate-400">
+              Run Analyze Case to generate ambiguity signals from real precedent
+              evidence.
+            </p>
+          )}
           <div className="space-y-3">
             {topSignals.map((signal) => (
               <div key={signal.label} className="space-y-1.5">
@@ -211,6 +193,17 @@ export const DashboardScreen = ({
               {analytics.onboardingIndicator}% readiness
             </p>
           </div>
+        </div>
+        <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/45 px-3 py-2">
+          <p className="text-xs uppercase tracking-[0.12em] text-slate-500">
+            Session Intelligence
+          </p>
+          <p className="text-xs leading-5 text-slate-300">
+            {analytics.lastAnalysisImpact}
+          </p>
+          <p className="text-xs leading-5 text-slate-300">
+            {analytics.lastConstitutionImpact}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button tone="subtle" onClick={() => onSelectView('time-machine')}>
