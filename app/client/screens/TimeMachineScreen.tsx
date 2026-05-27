@@ -25,6 +25,11 @@ const parseLines = (value: string): string[] =>
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
+const manualHistoryBaseTime = Date.UTC(2026, 0, 1, 0, 0, 0, 0);
+
+const toManualHistoryCreatedAt = (index: number): string =>
+  new Date(manualHistoryBaseTime - index * 60_000).toISOString();
+
 const parseModerationCase = (value: unknown, index: number): ModerationCase => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new Error(`modHistory[${index}] must be an object.`);
@@ -87,7 +92,6 @@ const parseModHistory = (value: string): ModerationCase[] => {
   }
 
   const lines = parseLines(raw);
-  const now = Date.now();
 
   return lines.map((line, index) => {
     const normalized = line.toLowerCase();
@@ -104,7 +108,7 @@ const parseModHistory = (value: string): ModerationCase[] => {
       action,
       matchedRules: [],
       moderatorNote: line,
-      createdAt: new Date(now - index * 60_000).toISOString(),
+      createdAt: toManualHistoryCreatedAt(index),
     };
   });
 };
